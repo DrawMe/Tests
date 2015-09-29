@@ -1,0 +1,163 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>tracking.js - select something</title>
+  <link rel="stylesheet" href="assets/demo.css">
+
+  <script src="libs/tracking.js"></script>
+
+  <style>
+    #video, 
+    #canvas {
+      height: 300px;
+      position: absolute;
+      width: 400px;
+      text-align: center;
+    }
+      
+    #controls {
+      height: 300px;
+      position: relative;
+      width: 400px;
+      text-align: center;
+    }
+      
+    #btn-changeBgColor {
+        width: 150px;
+        background-color: antiquewhite;
+        padding: 10px;
+        height: 80px;
+        position: absolute;
+        text-align: center;
+        bottom: 10px;
+        left: 50%;
+        margin-left: -75px;
+     }
+      
+     #btn-changeColor {
+        width: 150px;
+        background-color: antiquewhite;
+        padding: 10px;
+        height: 80px;
+        position: absolute;
+        text-align: center;
+        top: 10px;
+        left: 50%;
+        margin-left: -75px;
+     }
+      
+    canvas, video {
+      -moz-transform: scale(-1, 1);
+      -o-transform: scale(-1, 1);
+      -webkit-transform: scale(-1, 1);
+      filter: FlipH;
+      transform: scale(-1, 1);
+    }
+      
+      
+  </style>
+</head>
+<body>
+
+  <div class="demo-title">
+    <p><a href="http://trackingjs.com" target="_parent">tracking.js</a> － use tracking to select a item</p>
+  </div>
+  <div class="demo-frame">
+    <div class="demo-container">
+      <div class="draw-frame">
+        <video id="video" width="400" height="300" preload autoplay loop muted></video>
+        <canvas id="canvas" width="400" height="300"></canvas>
+        <div id="controls">
+            <div id="btn-changeBgColor" class="btn">Change bgcolor</div>  
+            <div id="btn-changeColor" class="btn">Change color</div>  
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+      //Declare canvas
+      window.onload = function() {
+      var video = document.getElementById('video');
+      var canvas = document.getElementById('canvas');
+      var context = canvas.getContext('2d');  
+       
+      // Declare btn actions      
+          var buttonsInfos = [];
+             
+          //Get all the buttons
+          var buttons = document.getElementsByClassName('btn');
+          for (var i = 0; i < buttons.length; ++i) {
+            var item = buttons[i];  
+            // Memorize each button infos
+            getButton(item);
+          }
+          
+      //Initialize select tracking
+      var SelectTracker = new tracking.ColorTracker(['magenta']);
+
+      tracking.track('#video', SelectTracker, { camera: true });
+
+      // Interactions when item selected    
+      SelectTracker.on('track', function(event) {
+        if (event.data.length === 0) {
+
+        } 
+        event.data.forEach(function(rect) {
+          // item detected
+          if (rect.color === 'magenta') {
+            isSelected(rect);
+          }
+          else {
+            console.log('item NO detected'); 
+          }
+        });
+      }) 
+
+        // Check if item selected
+        function isSelected(rect) {
+          //Center of ect    
+          var x= rect.x + rect.width / 2;
+          var y= rect.y + rect.height / 2;
+            
+          for(var i= 0; i < buttonsInfos.length; i++) {
+            var el = buttonsInfos[i];
+            if( el.x1 <= x && x <= el.x2 && el.y1 <= y && y <= el.y2) {
+                switch(buttonsInfos[i].id) {
+                    case "btn-changeBgColor" : 
+                        changeBgColor(document.querySelector("#"+el.id))
+                        break;
+                    case "btn-changeColor" : 
+                        changeColor(document.querySelector("#"+el.id))
+                        break;
+                }
+            }
+          }
+    
+        }
+            
+        function getButton(el) {
+            var btn = {
+                x1 : el.offsetLeft,
+                x2 : el.offsetLeft + el.offsetWidth,
+                y1 : el.offsetTop,
+                y2 : el.offsetTop + el.offsetHeight,
+                id : el.id,
+            };
+                      
+            buttonsInfos.push(btn);    
+        }
+
+        function changeBgColor(el) {
+            el.style.backgroundColor = '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6);        
+        }
+          
+        function changeColor(el) {
+            el.style.color = '#'+(0x1000000+(Math.random())*0xffffff).toString(16).substr(1,6);        
+        }
+    }
+  </script>
+
+</body>
+</html>
