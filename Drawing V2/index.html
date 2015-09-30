@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>tracking.js - draw something</title>
+
+  <script src="libs/tracking.js"></script>
+    
+  <style>
+    #canvas,
+    #video {
+      height: 300px;
+      position: absolute;
+      width: 500px;
+      top: 50%;
+      left: 50%;
+      margin-top: -150px;
+      margin-left: -250px;
+    }
+      
+    canvas, video {
+      -moz-transform: scale(-1, 1);
+      -o-transform: scale(-1, 1);
+      -webkit-transform: scale(-1, 1);
+      filter: FlipH;
+      transform: scale(-1, 1);
+    }
+      
+    canvas { border: 1px solid #ccc }
+      
+  </style>
+</head>
+<body>
+
+<video id="video" width="500" height="300" preload autoplay loop muted></video>
+<canvas id="canvas" width="500" height="300"></canvas>
+
+  <script>
+    window.onload = function() {
+        var el = document.getElementById('canvas');
+        var ctx = el.getContext('2d');
+
+        ctx.lineWidth = 1;
+        ctx.lineJoin = ctx.lineCap = 'round';
+
+        var isDrawing, points = [ ];
+        var tempX, tempY, cursorX, cursorY;
+        var colorLine = 'rgba(255,255,255,0.3)'
+
+        //Initialize colors tracking 
+        var tracker = new tracking.ColorTracker(['magenta', 'cyan']);
+        tracking.track('#video', tracker, { camera: true });
+        
+        //Manage color detection
+        tracker.on('track', function(event) {
+            if (event.data.length === 0) {
+
+            }
+
+            event.data.forEach(function(rect) {
+              if (rect.color === 'magenta') {
+                if(!isDrawing) {
+                  getPoint(rect);
+                }
+                beginDraw(rect);
+              }
+              else if (rect.color === 'cyan') {
+                //erase(rect);
+              }
+            });
+        });
+        
+        function getPoint(rect) {
+          points = [ ];
+          isDrawing = true;
+
+          cursorX = rect.x + rect.width / 2; 
+          cursorY = rect.y + rect.height / 2;
+          points.push({ x: cursorX, y: cursorY });
+
+        };
+
+        function beginDraw(rect) {
+          console.log('function beginDraw');
+          if (!isDrawing) return;
+            
+          cursorX = rect.x + rect.width / 2; 
+          cursorY = rect.y + rect.height / 2;
+          points.push({ x: cursorX, y: cursorY });
+
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+
+          for (var i = 0, len = points.length; i < len; i++) {
+            dx = points[i].x - points[points.length-1].x;
+            dy = points[i].y - points[points.length-1].y;
+            d = dx * dx + dy * dy;
+
+            if (d < 1000) {
+              ctx.beginPath();
+              ctx.strokeStyle = colorLine;
+              ctx.moveTo( points[points.length-1].x + (dx * 0.2), points[points.length-1].y + (dy * 0.2));
+              ctx.lineTo( points[i].x - (dx * 0.2), points[i].y - (dy * 0.2));
+              ctx.stroke();
+            }
+          }
+        };
+
+        function endDraw() {
+          console.log("test");
+          isDrawing = false;
+          points.length = 0;
+        };
+        
+        function erase(rect) {
+          ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
+        }
+        
+        el.onmousedown = function(e) {
+          points = [ ];
+          isDrawing = true;
+            
+          tempX = (e.clientX - el.offsetLeft);
+          tempY = (e.clientY - el.offsetTop);  
+          points.push({ x: tempX, y: tempY });
+        };
+    };
+  </script>
+
+</body>
+</html>
