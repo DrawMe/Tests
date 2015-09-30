@@ -3,10 +3,9 @@
 <head>
   <meta charset="utf-8">
   <title>tracking.js - draw something</title>
-  <link rel="stylesheet" href="assets/demo.css">
 
   <script src="libs/tracking.js"></script>
-  <script src="assets/splines.min.js"></script>
+  <script src="assets/splines.js"></script>
 
   <style>
     #canvas,
@@ -16,7 +15,6 @@
       width: 400px;
     }
     .draw-frame {
-      background: url(assets/draw_frame.png);
       width: 400px;
       height: 400px;
       border: 1px solid #ccc;
@@ -58,19 +56,19 @@
         
       var cursorObj;
       var cursorImg = new Image();
-        cursorImg.src = "imgs/cursor.png";
+      cursorImg.src = "imgs/cursor.png";
         
 
       var drawSegments = [[]];
       var segment = 0;
 		
-	 // Add a color
+      /*// Add a color
 	  tracking.ColorTracker.registerColor('green', function(r, g, b) {
 		  if (r < 50 && g < 0 && b < 50) {
 			return true;
 		  }
 		  return false;
-		});
+		});*/
 	
 	  //Initialize colors tracking
       var tracker = new tracking.ColorTracker(['magenta', 'cyan']);
@@ -82,7 +80,7 @@
           segment++;
 
           if (!drawSegments[segment]) {
-            drawSegments[segment] = [];
+            drawSegments[segment] = []; 
           }
         }
 
@@ -117,13 +115,14 @@
 
       (function loop() {
           
-          console.log('Effacer canvas');
-          context.clearRect(0, 0, canvas.width, canvas.height);
-          cursorObj = context.drawImage(cursorImg, cursor.x, cursor.y);
+          //console.log('Effacer canvas');
+          //context.clearRect(0, 0, canvas.width, canvas.height);
+          //cursorObj = context.drawImage(cursorImg, cursor.x, cursor.y);
+          //console.log('cursorObj = context.drawImage('+cursorImg+', '+cursor.x+', '+cursor.y+')');
            
-          console.log('Ecriture canvas');
+      
           for (var i = 0, len = drawSegments.length; i < len; i++) {
-              drawSpline(context, drawSegments[i], 0.5, false);
+              drawSpline(context, drawSegments[i], 1, false);
           }
 
           drawSegments = [drawSegments[drawSegments.length - 1]];
@@ -131,6 +130,8 @@
 
           requestAnimationFrame(loop);
       }());
+
+        
     };
   </script>
 
