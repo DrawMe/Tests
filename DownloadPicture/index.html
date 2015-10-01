@@ -1,0 +1,312 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>tracking.js - draw something</title>
+
+  <script src="libs/tracking.js"></script>
+  <script src="libs/jquery.min.js"></script>
+  <script src="libs/qrcode.js"></script>
+    
+  <style>
+    #container {
+      height: 375px;
+      position: absolute;
+      width: 500px;
+      top: 50%;
+      left: 50%;
+      margin-top: -187.5px;
+      margin-left: -250px;
+    }  
+      
+    #canvas,
+    #video {
+      height: 375px;
+      position: absolute;
+      width: 500px;
+      top: 0%;
+      left: 0%;
+    }
+      
+    #colors {
+      height: 375px;
+      position: relative;
+      width: 500px;
+      text-align: center;
+    }
+      
+    canvas, video, #colors {
+      -moz-transform: scale(-1, 1);
+      -o-transform: scale(-1, 1);
+      -webkit-transform: scale(-1, 1);
+      filter: FlipH;
+      transform: scale(-1, 1);
+    }
+      
+    canvas { border: 1px solid #ccc }
+       
+    .btn {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      margin: 50px; 
+    }
+      
+    .savePicture {
+      cursor: pointer;
+    }
+      
+    .generateQrCode {
+      cursor: pointer;
+    }
+      
+  </style>
+</head>
+<body>
+<div id="container">
+    <video id="video" width="500" height="300" preload autoplay loop muted></video>
+    <canvas id="canvas" width="500" height="300"></canvas>
+    <div id="colors">
+        <div class="btn" style="background-color: #ff0000" ></div>  
+        <div class="btn" style="background-color: #00ff00"></div>  
+    </div>
+</div>
+<div id="savePicture">Generer Image</div>
+<div id="generateQrCode">Generer QR Code</div>
+<div id="imgPreview">
+    <a href=" " download></a>
+</div>
+<div id="qrcode"></div>
+
+
+  <script>
+    window.onload = function() {
+        var video = document.getElementById('video');
+        var el = document.getElementById('canvas');
+        var ctx = el.getContext('2d');
+        
+        var urlQrCode;
+
+        ctx.lineWidth = 1;
+        ctx.lineJoin = ctx.lineCap = 'round';
+
+        /************************************************/
+        /* INTERACTIONS
+        /************************************************/
+        
+        document.getElementById('savePicture').onclick = function(e) {
+            savePhoto();
+        }
+        document.getElementById('generateQrCode').onclick = function(e) {
+            makeCode();
+        }
+        
+        /************************************************/
+        /* COLOR TRACKING
+        /************************************************/
+        var isDrawing, points = [ ];
+        
+        //Add red like new color tracking
+        tracking.ColorTracker.registerColor('red', function(r, g, b) {
+          if (r > 200 && g < 50 && b < 50) {
+            return true;
+          }
+          return false;
+        });
+        
+        //Initialize colors tracking 
+        var tracker = new tracking.ColorTracker(['cyan', 'red']);
+        tracking.track('#video', tracker, { camera: true });
+        
+        //Manage color detection
+        tracker.on('track', function(event) {
+            if (event.data.length === 0) {
+                if(isDrawing) {
+                    endDraw();
+                }
+            }
+
+            event.data.forEach(function(rect) {
+              isSelected(rect);
+              if (rect.color === 'cyan') {
+                if(!isDrawing) {
+                    getPoint(rect);
+                }
+                else {
+                    beginDraw(rect);
+                }
+              }
+              else if (rect.color === 'red') {
+                erase(rect);
+                 if(isDrawing) {
+                    endDraw();
+                }
+              }          
+            });
+        });
+        
+        
+        /************************************************/
+        /* DRAWING
+        /************************************************/
+
+        var tempX, tempY, cursorX, cursorY;
+        var colorLine = 'rgba(255,255,255,0.3)'
+        
+        // Get first point with pen
+        function getPoint(rect) {
+          points = [ ];
+          isDrawing = true;
+
+          cursorX = rect.x + rect.width / 2; 
+          cursorY = rect.y + rect.height / 2;
+          points.push({ x: cursorX, y: cursorY });
+
+        };
+
+        // Draw the line
+        function beginDraw(rect) {
+          if (!isDrawing) return;
+            
+          cursorX = rect.x + rect.width / 2; 
+          cursorY = rect.y + rect.height / 2;
+          points.push({ x: cursorX, y: cursorY });
+
+          ctx.beginPath();
+          ctx.moveTo(points[points.length - 2].x, points[points.length - 2].y);
+          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+          ctx.stroke();
+
+          for (var i = 0, len = points.length; i < len; i++) {
+            dx = points[i].x - points[points.length-1].x;
+            dy = points[i].y - points[points.length-1].y;
+            d = dx * dx + dy * dy;
+
+            if (d < 1000) {
+              ctx.beginPath();
+              ctx.strokeStyle = colorLine;
+              ctx.moveTo( points[points.length-1].x + (dx * 0.1), points[points.length-1].y + (dy * 0.1));
+              ctx.lineTo( points[i].x - (dx * 0.1), points[i].y - (dy * 0.1));
+              ctx.stroke();
+            }
+          }
+        };
+
+        // Stop drawing
+        function endDraw() {
+          isDrawing = false;
+          points.length = 0;
+        };
+        
+        // Erase drawing
+        function erase(rect) {
+          ctx.clearRect(rect.x, rect.y, rect.width, rect.height);
+        }
+          
+        
+        /************************************************/
+        /* SELECT BUTTON
+        /************************************************/
+        
+        // Declare btn actions      
+          var buttonsInfos = [];
+
+        //Get all the buttons
+          var buttons = document.getElementsByClassName('btn');
+          for (var i = 0; i < buttons.length; ++i) {
+              var item = buttons[i];  
+              // Memorize each button infos
+              getButton(item);
+          }
+        
+        function getButton(el) {
+             var btn = {
+                x1 : el.offsetLeft,
+                x2 : el.offsetLeft + el.offsetWidth,
+                y1 : el.offsetTop,
+                y2 : el.offsetTop + el.offsetHeight,
+                color : el.style.backgroundColor
+            };
+            buttonsInfos.push(btn);    
+        }
+          
+        // Check if item selected
+        function isSelected(rect) {
+          //Center of rect    
+          var x= rect.x + rect.width / 2;
+          var y= rect.y + rect.height / 2;
+            
+          for(var i= 0; i < buttonsInfos.length; i++) {
+            var el = buttonsInfos[i];
+            if( el.x1 <= x && x <= el.x2 && el.y1 <= y && y <= el.y2) {
+                changeColor(el)
+            }
+          }
+    
+        }
+        
+        function changeColor(el) {    
+           color =  el.color;  
+           colorLine = color.replace(/rgb/i, "rgba");
+           colorLine = colorLine.replace(/\)/i,',0.3)');
+        }
+        
+        /************************************************/
+        /* GENERATE PICTURE
+        /************************************************/
+        
+        //Capture video fram
+        function capture(video) {
+            var scaleFactor = 0.75;
+
+            var w = video.videoWidth * scaleFactor;
+            var h = video.videoHeight * scaleFactor;
+
+            ctx.drawImage(video, 0, 0, w, h);
+        } 
+        
+        //Generate and display picture in an preview block
+        function savePhoto() { 
+
+            var drawingCapture = el.toDataURL("image/png");
+            var drawingImg = new Image();
+            
+            drawingImg.src = drawingCapture;
+                        
+            var scaleFactor = 0.75;
+            var w = video.videoWidth * scaleFactor;
+            var h = video.videoHeight * scaleFactor;
+            
+            capture(video);
+                       
+            ctx.drawImage(drawingImg, 0, 0, w, h);
+            
+            var img = el.toDataURL("image/png"); 
+            var myImg = new Image();
+            
+            myImg.src = img;
+            document.getElementById('imgPreview').appendChild(myImg);
+
+            urlQrCode = img; 
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        /************************************************/
+        /* GENERATE QR CODE
+        /************************************************/
+
+            function makeCode () {		
+                urlQrCode = "https://drive.google.com/open?id=0BwuKpMFwQsC2UDZrSUxMUW0zSVE";  
+                new QRCode(document.getElementById("qrcode"), urlQrCode);
+                
+                //TODO : converts link base 64 to Uri
+            }
+        
+    };
+  </script>
+
+</body>
+</html>
