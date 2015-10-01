@@ -186,7 +186,6 @@
             
           for(var i= 0; i < buttonsInfos.length; i++) {
             var el = buttonsInfos[i];
-            console.log("( "+ el.x1 +" <="+ x + "&& "+ x + "<="+ el.x2 +" &&"+ el.y1 + " <="+ y +" &&"+ y +"<= "+ el.y2+" )");
             if( el.x1 <= x && x <= el.x2 && el.y1 <= y && y <= el.y2) {
                 changeColor(el)
             }
