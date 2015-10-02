@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>tracking.js - draw something</title>
+
+	<script src="libs/jquery.min.js"></script>
+
+  <style>
+    #generate {
+		display: inline-block;
+		border: 1px solid black;
+		padding: 5px;
+	}
+  </style>
+</head>
+<body>
+
+ <div id="generate">Cliquez pour choisir un mot aléatoire et sa silhouette associée</div>
+<div id="result"> </div>
+
+<script type="text/javascript">
+
+var data;
+
+$("#generate").click(function() {
+	randomWord(data);
+});
+
+function ajaxRequest(){
+ var activexmodes=["Msxml2.XMLHTTP", "Microsoft.XMLHTTP"] //activeX versions to check for in IE
+ if (window.ActiveXObject){ //Test for support for ActiveXObject in IE first (as XMLHttpRequest in IE7 is broken)
+  for (var i=0; i<activexmodes.length; i++){
+   try{
+    return new ActiveXObject(activexmodes[i])
+   }
+   catch(e){
+    //suppress error
+   }
+  }
+ }
+ else if (window.XMLHttpRequest) // if Mozilla, Safari etc
+  return new XMLHttpRequest()
+ else
+  return false
+}
+
+var mygetrequest=new ajaxRequest()
+
+mygetrequest.onreadystatechange=function(){
+ if (mygetrequest.readyState==4){
+  if (mygetrequest.status==200 || window.location.href.indexOf("http")==-1){
+   var jsondata=eval("("+mygetrequest.responseText+")") //retrieve result as an JavaScript object
+   console.log(jsondata);
+   
+   data=jsondata;
+  }
+  else{
+   alert("An error has occured making the request")
+  }
+ }
+}
+
+function randomWord(obj) {               
+    var item =  obj[Math.floor(Math.random() * obj.length)];
+	var word = item.word;
+	var image = item.image; 
+	
+    console.log("The word is: "+item.word);
+	output='<h1>'+ word+'<h1>'
+    output+='<img src="'+ image+'" />'
+	
+    document.getElementById("result").innerHTML=output
+}
+
+mygetrequest.open("GET", "words.json", true)
+mygetrequest.send(null)
+
+</script>
+
+</body>
+</html>
